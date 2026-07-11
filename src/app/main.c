@@ -342,10 +342,10 @@ int main(void)
                 // 清除回退原点的软件定时器
                 g_next_retract_retry_tick = 0;
             }
-
-            // bus2_tx_retract();                          // 第二路持续命令回退
-            bool motorAtOrigin = 1;
-            // motor_is_at_origin(); // CH1 检测到原点 = 检测到数据
+            // 控制双踏板回退
+            // 回退成功以后 g_motor_at_origin 会变成 true
+            // 回退失败不会释放继电器，会隔 500ms 重试
+            safety_retract_pedal_once_or_retry();
 
             // 判断外部主机是否有数据重新发送过来
             bool busRecovered = !busTimeoutFlag; // CH1 有数据 = !超时
@@ -353,8 +353,8 @@ int main(void)
             // 急停没有被按下执行if里面的代码
             if (!eStopActive)
             {
-                // motorAtOrigin == 电机已经回到原点 用标志位1表示 and busRecovered == 外部主机传来数据 用标志位1表示
-                if (motorAtOrigin && busRecovered)
+                // g_motor_at_origin == 电机已经回到原点 用标志位1表示 and busRecovered == 外部主机传来数据 用标志位1表示
+                if (g_motor_at_origin && busRecovered)
                 {
                     // 断开继电器将控制权还给外部主机
                     relay_set_all(false);
