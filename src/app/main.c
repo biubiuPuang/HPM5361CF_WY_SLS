@@ -307,6 +307,19 @@ int main(void)
         }
     }
     set_led_state(LED_OFF);
+    
+/* ------------------------------------------------------------------------ */
+    // Test -- 测试 用RS485给上位机发信息 🚻
+    const char *msg = "hello upper computer\r\n";
+    while (1)
+    {
+        led_toggle();
+        rs485_send_data(RS485_CH1, (const uint8_t *)msg, strlen(msg));
+        board_delay_ms(200);
+    }
+/* ------------------------------------------------------------------------ */
+
+    rs485_send_data(RS485_CH1, (const uint8_t *)msg, strlen(msg));
     /* 主循环 */
     while (1)
     {
