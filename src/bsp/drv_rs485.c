@@ -1,6 +1,7 @@
 #include "drv_rs485.h"
 #include <string.h>
 #include "ring_buffer.h"
+#include "drv_timer_extra.h"
 
 /* ============================================================
  *  全局变量
@@ -13,6 +14,11 @@ extern volatile bool busTimeoutFlag;
 #define RS485_RB_SIZE    512U
 static uint8_t       rs485_rb_buf[RS485_CHANNEL_NUM][RS485_RB_SIZE];
 static ring_buffer_t rs485_rb[RS485_CHANNEL_NUM];
+
+static bool rs485_channel_is_valid(rs485_channel_t ch)
+{
+    return ch < RS485_CHANNEL_NUM;
+}
 
 static rs485_ctx_t rs485_ctx[RS485_CHANNEL_NUM] = {
     [RS485_CH1] = {
@@ -93,6 +99,9 @@ SDK_DECLARE_EXT_ISR_M(RS485_2_UART_IRQ, rs485_2_uart_isr)
  * ============================================================ */
 void rs485_set_mode(rs485_channel_t ch, uint8_t mode)
 {
+    if (!rs485_channel_is_valid(ch)) {
+        return;
+    }
     gpio_write_pin(rs485_ctx[ch].de_gpio, rs485_ctx[ch].de_port, rs485_ctx[ch].de_pin, mode);
 }
 
@@ -102,6 +111,10 @@ void rs485_set_mode(rs485_channel_t ch, uint8_t mode)
 static hpm_stat_t rs485_configure_dma_rx(rs485_channel_t ch)
 {
     hpm_stat_t status;
+
+    if (!rs485_channel_is_valid(ch)) {
+        return status_invalid_argument;
+    }
     dma_handshake_config_t config;
 
     dma_disable_channel(BOARD_APP_HDMA, rs485_ctx[ch].rx_dma_chn);
@@ -125,6 +138,9 @@ static hpm_stat_t rs485_configure_dma_rx(rs485_channel_t ch)
 // 重新配置DMA接收
 hpm_stat_t rs485_reconfig_dma_rx(rs485_channel_t ch)
 {
+    if (!rs485_channel_is_valid(ch)) {
+        return status_invalid_argument;
+    }
     dma_disable_channel(BOARD_APP_HDMA, rs485_ctx[ch].rx_dma_chn);
     memset(rs485_dma_rx_buffer[ch], 0, RS485_DMA_BUFFER_SIZE);
     return rs485_configure_dma_rx(ch);
@@ -149,10 +165,17 @@ static hpm_stat_t rs485_uart_tx_trigger_dma(rs485_channel_t ch, uint32_t src, ui
 /* ============================================================
  *  初始化
  * ============================================================ */
-hpm_stat_t old_rs485_init(rs485_channel_t ch)
+hpm_stat_t rs485_init_channel(rs485_channel_t ch, uint32_t baudrate)
 {
     hpm_stat_t status;
     uart_config_t config = {0};
+
+    if (!rs485_channel_is_valid(ch)) {
+        return status_invalid_argument;
+    }
+    if (baudrate > 0) {
+        rs485_ctx[ch].baudrate = baudrate;
+    }
 
     /* DE引脚: 设为GPIO输出, 默认拉低(接收模式) */
     gpio_set_pin_output(rs485_ctx[ch].de_gpio, rs485_ctx[ch].de_port, rs485_ctx[ch].de_pin);
@@ -199,12 +222,18 @@ hpm_stat_t old_rs485_init(rs485_channel_t ch)
     rs485_ctx[ch].rx_idle = false;
     rs485_ctx[ch].rx_len  = 0;
 
-    // 初始化接收缓冲区
-    for (int i = 0; i < RS485_CHANNEL_NUM; i++) {
-        ring_buffer_init(&rs485_rb[i], rs485_rb_buf[i], RS485_RB_SIZE);
-    }
+    // 初始化当前通道接收缓冲区
+    ring_buffer_init(&rs485_rb[ch], rs485_rb_buf[ch], RS485_RB_SIZE);
 
     return status_success;
+}
+
+hpm_stat_t old_rs485_init(rs485_channel_t ch)
+{
+    if (!rs485_channel_is_valid(ch)) {
+        return status_invalid_argument;
+    }
+    return rs485_init_channel(ch, rs485_ctx[ch].baudrate);
 }
 
 /* ============================================================
@@ -215,7 +244,7 @@ hpm_stat_t rs485_send_data(rs485_channel_t ch, const uint8_t *data, uint32_t len
     if (data == NULL || len == 0 || len > RS485_DMA_BUFFER_SIZE) {
         return status_invalid_argument;
     }
-    if (ch >= RS485_CHANNEL_NUM) {
+    if (!rs485_channel_is_valid(ch)) {
         return status_invalid_argument;
     }
 
@@ -251,12 +280,18 @@ hpm_stat_t rs485_send_data(rs485_channel_t ch, const uint8_t *data, uint32_t len
  * ============================================================ */
 uint32_t rs485_get_dma_received_bytes(rs485_channel_t ch)
 {
+    if (!rs485_channel_is_valid(ch)) {
+        return 0;
+    }
     uint32_t remaining = dma_get_remaining_transfer_size(BOARD_APP_HDMA, rs485_ctx[ch].rx_dma_chn);
     return (remaining < RS485_DMA_BUFFER_SIZE) ? (RS485_DMA_BUFFER_SIZE - remaining) : 0;
 }
 
 uint32_t rs485_check_and_handle_rx(rs485_channel_t ch)
 {
+    if (!rs485_channel_is_valid(ch)) {
+        return 0;
+    }
     if (!rs485_ctx[ch].rx_idle)
         return 0;
 
@@ -278,6 +313,54 @@ uint32_t rs485_check_and_handle_rx(rs485_channel_t ch)
     return writelen;
 }
 
+uint32_t rs485_rx_available(rs485_channel_t ch)
+{
+    if (!rs485_channel_is_valid(ch)) {
+        return 0;
+    }
+    (void)rs485_check_and_handle_rx(ch);
+    return ring_buffer_available(&rs485_rb[ch]);
+}
+
+uint32_t rs485_rx_read(rs485_channel_t ch, uint8_t *data, uint32_t len)
+{
+    if (!rs485_channel_is_valid(ch) || data == NULL || len == 0) {
+        return 0;
+    }
+    (void)rs485_check_and_handle_rx(ch);
+    return ring_buffer_read(&rs485_rb[ch], data, len);
+}
+
+void rs485_rx_flush(rs485_channel_t ch)
+{
+    if (!rs485_channel_is_valid(ch)) {
+        return;
+    }
+    ring_buffer_reset(&rs485_rb[ch]);
+    rs485_ctx[ch].rx_idle = false;
+    rs485_ctx[ch].rx_len = 0;
+    (void)rs485_reconfig_dma_rx(ch);
+}
+
+hpm_stat_t rs485_wait_rx_available(rs485_channel_t ch, uint32_t need_len, uint32_t timeout_ms)
+{
+    uint32_t start_ms;
+
+    if (!rs485_channel_is_valid(ch) || need_len == 0) {
+        return status_invalid_argument;
+    }
+
+    start_ms = system_get_time_ms();
+    while ((uint32_t)(system_get_time_ms() - start_ms) < timeout_ms) {
+        if (rs485_rx_available(ch) >= need_len) {
+            return status_success;
+        }
+        board_delay_ms(1);
+    }
+
+    return status_timeout;
+}
+
 rs485_ctx_t *rs485_get_ctx(rs485_channel_t ch)
 {
     if (ch >= RS485_CHANNEL_NUM) {
@@ -294,7 +377,8 @@ static void app_parse_frame(rs485_channel_t ch, uint32_t len)
     if (ch == RS485_CH1) {
         monitor_timeout = 0;
         busTimeoutFlag = false;
-        rs485_send_data(ch, "data", sizeof("data"));
+        static const uint8_t reply[] = "data";
+        rs485_send_data(ch, reply, sizeof(reply));
     } else if (ch == RS485_CH2) {
         rs485_send_data(ch, data, len);
     }
@@ -303,13 +387,10 @@ static void app_parse_frame(rs485_channel_t ch, uint32_t len)
 void app_rs485_poll(void)
 {
     uint32_t g_rx_len = 0;
-    /* 第一路 */
+    /* 第一路：外部总线监听 */
     g_rx_len = rs485_check_and_handle_rx(RS485_CH1);
     if (g_rx_len > 0)
         app_parse_frame(RS485_CH1, g_rx_len);
 
-    /* 第二路 */
-    g_rx_len = rs485_check_and_handle_rx(RS485_CH2);
-    if (g_rx_len > 0)
-        app_parse_frame(RS485_CH2, g_rx_len);
+    /* 第二路：保留给双踏板 Modbus 控制，不在这里读取或回发 */
 }

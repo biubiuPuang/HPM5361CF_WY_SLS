@@ -35,7 +35,7 @@ volatile uint32_t monitor_timeout = 0; // 监控超时计数器
 volatile bool busTimeoutFlag = false;  // 总线超时标志
 volatile bool eStopActive = false;     // 紧急标志  == 1急停被按下  == 0 没有进入急停模式
 static bool relayEnergized = false;
-#define MOTOR_TIMEOUT_THRESHOLD 5000
+#define MOTOR_TIMEOUT_THRESHOLD 1000
 
 // 双踏板相关配置\标志位
 /*
@@ -320,7 +320,7 @@ int main(void)
         {
         // 监听模式进入的循环
         case STATE_NORMAL:
-            // 判断,如果急停按钮被触发或者5秒没收到数据就将监听模式改为异常状态,不满意则直接退出
+            // 判断,如果急停按钮被触发或者1秒没收到数据就将监听模式改为异常状态,不满意则直接退出
             if (eStopActive || busTimeoutFlag)
                 sysState = STATE_SAFETY;
             break;
@@ -356,6 +356,8 @@ int main(void)
                 // g_motor_at_origin == 电机已经回到原点 用标志位1表示 and busRecovered == 外部主机传来数据 用标志位1表示
                 if (g_motor_at_origin && busRecovered)
                 {
+                    // 退出异常状态前先关闭双踏板控制器
+                    safety_close_pedal_controller();
                     // 断开继电器将控制权还给外部主机
                     relay_set_all(false);
                     // 把表示继电器是否吸合的标志位改为 0 == 此时继电器没有吸合

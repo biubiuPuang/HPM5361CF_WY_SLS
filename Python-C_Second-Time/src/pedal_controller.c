@@ -1,19 +1,19 @@
 #include "pedal_controller.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
+
+#include "pedal_platform.h"
 
 static void sleep_ms(int ms)
 {
-    if (ms > 0) {
-        Sleep((DWORD)ms);
-    }
+    pedal_platform_sleep_ms(ms);
 }
 
-static DWORD now_ms(void)
+static uint32_t now_ms(void)
 {
-    return GetTickCount();
+    return pedal_platform_now_ms();
 }
 
 static int32_t abs_i32(int32_t value)
@@ -99,13 +99,13 @@ static PedalResult ensure_position_profile(PedalController *controller)
 
 static PedalResult wait_both_settled(PedalController *controller, int32_t target_cnt)
 {
-    DWORD start = now_ms();
-    DWORD settle_start = 0;
+    uint32_t start = now_ms();
+    uint32_t settle_start = 0;
     int settling = 0;
     AxisStatus brake_status;
     AxisStatus accelerator_status;
 
-    while ((DWORD)(now_ms() - start) < (DWORD)controller->config.move_timeout_ms) {
+    while ((uint32_t)(now_ms() - start) < (uint32_t)controller->config.move_timeout_ms) {
         PedalResult result;
         int brake_ok;
         int accelerator_ok;
@@ -137,7 +137,7 @@ static PedalResult wait_both_settled(PedalController *controller, int32_t target
             if (!settling) {
                 settling = 1;
                 settle_start = now_ms();
-            } else if ((DWORD)(now_ms() - settle_start) >= (DWORD)controller->config.move_settle_hold_ms) {
+            } else if ((uint32_t)(now_ms() - settle_start) >= (uint32_t)controller->config.move_settle_hold_ms) {
                 return PEDAL_OK;
             }
         } else {

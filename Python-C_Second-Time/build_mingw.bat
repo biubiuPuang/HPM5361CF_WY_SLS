@@ -4,7 +4,7 @@ setlocal
 if not exist build mkdir build
 
 set CFLAGS=-std=c99 -Wall -Wextra -Iinclude
-set SRC=src\rs485_transport_win32.c src\servo_axis.c src\pedal_controller.c src\ids830abs_utils.c
+set SRC=src\rs485_transport_win32.c src\pedal_platform_win32.c src\servo_axis.c src\pedal_controller.c src\ids830abs_utils.c
 
 echo Building retract_dual_pedals.exe...
 gcc %CFLAGS% %SRC% examples\retract_dual_pedals.c -o build\retract_dual_pedals.exe

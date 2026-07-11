@@ -94,11 +94,16 @@ typedef struct {
  *  函数声明
  * ============================================================ */
 hpm_stat_t old_rs485_init(rs485_channel_t ch);
+hpm_stat_t rs485_init_channel(rs485_channel_t ch, uint32_t baudrate);
 void rs485_set_mode(rs485_channel_t ch, uint8_t mode);
 hpm_stat_t rs485_send_data(rs485_channel_t ch, const uint8_t *data, uint32_t len);
 uint32_t rs485_get_dma_received_bytes(rs485_channel_t ch);
 uint32_t rs485_check_and_handle_rx(rs485_channel_t ch);
 hpm_stat_t rs485_reconfig_dma_rx(rs485_channel_t ch);
+uint32_t rs485_rx_available(rs485_channel_t ch);
+uint32_t rs485_rx_read(rs485_channel_t ch, uint8_t *data, uint32_t len);
+void rs485_rx_flush(rs485_channel_t ch);
+hpm_stat_t rs485_wait_rx_available(rs485_channel_t ch, uint32_t need_len, uint32_t timeout_ms);
 rs485_ctx_t *rs485_get_ctx(rs485_channel_t ch);
 
 void rs485_1_uart_isr(void);

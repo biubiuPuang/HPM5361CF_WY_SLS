@@ -39,6 +39,7 @@ sdk_compile_definitions(-DCONFIG_NDEBUG_CONSOLE=1)
 sdk_compile_definitions(-DBOARD_PWM_PERIOD=1000)
 sdk_compile_definitions(-DCONFIG_HPM_PWM=1)
 sdk_compile_definitions(-DCONFIG_HPM_I2C=1)
+sdk_compile_definitions(-DPEDAL_PLATFORM_HPM=1)
 sdk_ses_opt_lib_io_type(RTT)
 
 # 提供正确的包含路径
@@ -61,6 +62,17 @@ file(GLOB_RECURSE SRC_FILES
     src/app/*.c
     src/bsp/*.c
 )
+
+# 双踏板控制源码
+list(APPEND SRC_FILES
+    Python-C_Second-Time/src/pedal_controller.c
+    Python-C_Second-Time/src/servo_axis.c
+    Python-C_Second-Time/src/ids830abs_utils.c
+    Python-C_Second-Time/src/pedal_platform_hpm.c
+    Python-C_Second-Time/src/rs485_transport_hpm.c
+)
+
+
 # 排除renamed目录
 list(FILTER SRC_FILES EXCLUDE REGEX \"/renamed/\")
 
