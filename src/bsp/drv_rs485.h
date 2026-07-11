@@ -27,7 +27,7 @@ typedef enum {
 #define RS485_1_UART                     HPM_UART0
 #define RS485_1_UART_CLK_NAME            clock_uart0
 #define RS485_1_UART_IRQ                 IRQn_UART0
-#define RS485_1_UART_BAUDRATE            (9600UL)
+#define RS485_1_UART_BAUDRATE            (38400UL)
 
 #define RS485_1_UART_TX_DMA_CHN          (21U)
 #define RS485_1_UART_RX_DMA_CHN          (20U)
@@ -47,7 +47,7 @@ typedef enum {
 #define RS485_2_UART                     HPM_UART2
 #define RS485_2_UART_CLK_NAME            clock_uart2
 #define RS485_2_UART_IRQ                 IRQn_UART2
-#define RS485_2_UART_BAUDRATE            (9600UL)
+#define RS485_2_UART_BAUDRATE            (38400UL)
 
 #define RS485_2_UART_TX_DMA_CHN          (25U)
 #define RS485_2_UART_RX_DMA_CHN          (24U)
@@ -93,7 +93,7 @@ typedef struct {
 /* ============================================================
  *  函数声明
  * ============================================================ */
-hpm_stat_t rs485_init(rs485_channel_t ch);
+hpm_stat_t old_rs485_init(rs485_channel_t ch);
 void rs485_set_mode(rs485_channel_t ch, uint8_t mode);
 hpm_stat_t rs485_send_data(rs485_channel_t ch, const uint8_t *data, uint32_t len);
 uint32_t rs485_get_dma_received_bytes(rs485_channel_t ch);

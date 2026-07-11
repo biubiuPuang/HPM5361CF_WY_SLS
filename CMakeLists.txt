@@ -49,6 +49,13 @@ sdk_inc(src)
 sdk_inc(src/app)
 sdk_inc(src/bsp)
 
+# 用户自定义添加_双踏板检测脚本
+sdk_inc(Python-C_Second-Time)
+sdk_inc(Python-C_Second-Time/build)
+sdk_inc(Python-C_Second-Time/examples)
+sdk_inc(Python-C_Second-Time/include)
+sdk_inc(Python-C_Second-Time/src)
+
 # 收集源文件
 file(GLOB_RECURSE SRC_FILES 
     src/app/*.c

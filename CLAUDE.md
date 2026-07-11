@@ -35,6 +35,7 @@
  - 如果有可以直接使用的函数或者例如配套的BSP封装函数,优先使用现成的,禁止手搓 
 
 ## 有关异常状态下的状态机或控制双踏板代码编写规则如下(异常状态和双踏板属于同一个意思)
+ - 如果我在对相关的双踏板驱动的代码进行提问的时候,你应该先告诉我代码的意思是什么,以及因为代码大概率是AI生成的所以你需要判断一下,对于此项目我否需要对这段代码做出修改适配
  - 其中文件路径为:D:\_Project\HPM5361CF_WY_SLS_Project\MotorMonitorV1.0\Python-C_Second-Time的路径是相关驱动函数的代码
  - 其中D:\_Project\HPM5361CF_WY_SLS_Project\MotorMonitorV1.0\Python-C_Second-Time路径下的README.md文件是使用说明书,
  你在编写相关代码的时候需要参考此说明书来进行编写

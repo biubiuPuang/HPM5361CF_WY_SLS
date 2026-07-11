@@ -149,7 +149,7 @@ static hpm_stat_t rs485_uart_tx_trigger_dma(rs485_channel_t ch, uint32_t src, ui
 /* ============================================================
  *  初始化
  * ============================================================ */
-hpm_stat_t rs485_init(rs485_channel_t ch)
+hpm_stat_t old_rs485_init(rs485_channel_t ch)
 {
     hpm_stat_t status;
     uart_config_t config = {0};
