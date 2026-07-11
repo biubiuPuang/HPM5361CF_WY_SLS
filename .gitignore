@@ -1,0 +1,12 @@
+# 忽略整个build目录
+build/
+build/segger_embedded_studio/car_test.json
+build/segger_embedded_studio/car_test.json
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/settings.json
+.vscode/launch.json
+.vscode/launch.json
+.vscode/settings.json
+.cache/clangd/index/24c16.c.412F9E069726760F.idx
+*.idx

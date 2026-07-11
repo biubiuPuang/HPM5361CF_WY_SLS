@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Export PDF",
+      "type": "plantuml",
+      "command": "export",
+      "args": [
+        "${file}",
+        "--format", "pdf",
+        "--output", "${workspaceFolder}/docs/diagrams",
+        "--config", "skinparam dpi 300"
+      ],
+      "group": "build"
+    }
+  ]
+} 

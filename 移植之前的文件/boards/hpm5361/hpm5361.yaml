@@ -1,0 +1,30 @@
+board:
+    name: car_test
+    soc: HPM5361
+    device: HPM5361xCBx
+    openocd-soc: hpm5300
+    openocd-probe: jlink
+    on-board-flash:
+      type: qspi-nor-flash
+      size: 1M
+    feature:
+      - sei
+      - rdc
+      - qeiv2
+      - linv2
+      - dmav2
+      - qeo
+      - pwm
+      - mmc
+      - plb
+      - dac
+      - adc16
+      - pdgo
+      - mcan
+      - ewdg
+      - gpiom
+      - tsns
+      - crc
+      - spi
+      - i2c
+      - ptp
