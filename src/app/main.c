@@ -35,7 +35,7 @@ volatile uint32_t monitor_timeout = 0; // 监控超时计数器
 volatile bool busTimeoutFlag = false;  // 总线超时标志
 volatile bool eStopActive = false;     // 紧急标志  == 1急停被按下  == 0 没有进入急停模式
 static bool relayEnergized = false;
-#define MOTOR_TIMEOUT_THRESHOLD 1000
+#define MOTOR_TIMEOUT_THRESHOLD 5000
 
 // 双踏板相关配置\标志位
 /*
@@ -59,6 +59,25 @@ static bool g_motor_at_origin = false;
 static PedalResult g_pedal_last_result = PEDAL_OK;
 // 下一次允许重试回退的系统
 static uint32_t g_next_retract_retry_tick = 0;
+
+/* ------------------------------------------------------------------------ */
+/**
+ * @brief 通过RS485_CH1发送字符串给上位机
+ *
+ * rs485_send_data()：用户自定义 RS485 发送函数
+ * strlen()：C标准库函数，用来计算字符串长度
+ */
+static void rs485_ch1_print_to_host(const char *msg)
+{
+    if (msg == NULL)
+    {
+        return;
+    }
+    rs485_send_data(RS485_CH1, (const uint8_t *)msg, strlen(msg));
+}
+// 调用示例：
+// rs485_ch1_print_to_host("你好，上位机\r\n");
+/* ------------------------------------------------------------------------ */
 
 // 双踏板自定义函数
 // safety_open_pedal_controller_once() 配置并打开双踏板控制器函数，只初始化一次。
@@ -272,7 +291,7 @@ static hpm_stat_t system_init(void)
     status = old_rs485_init(RS485_CH1);
     if (status != status_success)
     {
-        printf("系统定时器RS485_CH1初始化失败\r\n");
+        //  printf("系统定时器RS485_CH1初始化失败\r\n");
         return status;
     }
     // 初始化RS485通道2
@@ -280,7 +299,7 @@ static hpm_stat_t system_init(void)
     status = old_rs485_init(RS485_CH2);
     if (status != status_success)
     {
-        printf("系统定时器RS485_CH2初始化失败\r\n");
+        // printf("系统定时器RS485_CH2初始化失败\r\n");
         return status;
     }
 
@@ -307,19 +326,7 @@ int main(void)
         }
     }
     set_led_state(LED_OFF);
-    
-/* ------------------------------------------------------------------------ */
-    // Test -- 测试 用RS485给上位机发信息 🚻
-    const char *msg = "hello upper computer\r\n";
-    while (1)
-    {
-        led_toggle();
-        rs485_send_data(RS485_CH1, (const uint8_t *)msg, strlen(msg));
-        board_delay_ms(200);
-    }
-/* ------------------------------------------------------------------------ */
 
-    rs485_send_data(RS485_CH1, (const uint8_t *)msg, strlen(msg));
     /* 主循环 */
     while (1)
     {
@@ -344,6 +351,11 @@ int main(void)
             // 判断继电器是否被吸合,如果没有被吸合则进入循环
             if (!relayEnergized)
             {
+                for(int i = 1; i <= 10; i++)
+                {
+                    rs485_ch1_print_to_host("Error Enter the emergency mode\r\n");
+                    board_delay_ms(500);
+                }
                 // 吸合继电器
                 relay_set_all(true);
                 // 吸合继电器的标志位
