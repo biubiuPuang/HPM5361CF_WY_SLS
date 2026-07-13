@@ -60,25 +60,6 @@ static PedalResult g_pedal_last_result = PEDAL_OK;
 // 下一次允许重试回退的系统
 static uint32_t g_next_retract_retry_tick = 0;
 
-/* ------------------------------------------------------------------------ */
-/**
- * @brief 通过RS485_CH1发送字符串给上位机
- *
- * rs485_send_data()：用户自定义 RS485 发送函数
- * strlen()：C标准库函数，用来计算字符串长度
- */
-static void rs485_ch1_print_to_host(const char *msg)
-{
-    if (msg == NULL)
-    {
-        return;
-    }
-    rs485_send_data(RS485_CH1, (const uint8_t *)msg, strlen(msg));
-}
-// 调用示例：
-// rs485_ch1_print_to_host("你好，上位机\r\n");
-/* ------------------------------------------------------------------------ */
-
 // 双踏板自定义函数
 // safety_open_pedal_controller_once() 配置并打开双踏板控制器函数，只初始化一次。
 // safety_retract_pedal_once_or_retry() 控制双踏板回退到原点；失败后隔一段时间继续重试，成功才停止。
@@ -330,17 +311,18 @@ int main(void)
     /* 主循环 */
     while (1)
     {
-        eStopActive = get_button_state(); // 获取ESTOP按钮状态
+        eStopActive = get_button_state(); // 获取STOP按钮状态
 
         // 检查两路485总线有没有接受到数据,如果有的话就调用自定义的函数处理数据
+        // 原本是检查两路,但是这里目前只监听一路RS485_CH1的数据有没有传过来
         app_rs485_poll();
 
         // sysState == 状态机的标志位,初始值为监听模式
         switch (sysState)
         {
-        // 监听模式进入的循环
+        // 监听模式
         case STATE_NORMAL:
-            // 判断,如果急停按钮被触发或者1秒没收到数据就将监听模式改为异常状态,不满意则直接退出
+            // 判断,如果急停按钮被触发或者5秒没收到数据就将监听模式改为异常状态,不满意则直接退出
             if (eStopActive || busTimeoutFlag)
                 sysState = STATE_SAFETY;
             break;
@@ -351,11 +333,6 @@ int main(void)
             // 判断继电器是否被吸合,如果没有被吸合则进入循环
             if (!relayEnergized)
             {
-                for(int i = 1; i <= 10; i++)
-                {
-                    rs485_ch1_print_to_host("Error Enter the emergency mode\r\n");
-                    board_delay_ms(500);
-                }
                 // 吸合继电器
                 relay_set_all(true);
                 // 吸合继电器的标志位
