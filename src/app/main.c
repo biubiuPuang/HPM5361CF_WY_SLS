@@ -330,7 +330,7 @@ int main(void)
         // 处理异常状态的代码逻辑
         // 如果为异常状态
         case STATE_SAFETY:
-            // 判断继电器是否被吸合,如果没有被吸合则进入循环
+            // 判断继电器是否被吸合,如果没有的吸合继电器且切换到CH2控制
             if (!relayEnergized)
             {
                 // 吸合继电器
@@ -344,30 +344,29 @@ int main(void)
                 // 清除回退原点的软件定时器
                 g_next_retract_retry_tick = 0;
             }
+
+            // 判断外部主机CH1是否有数据重新发送过来
+            bool busRecovered = !busTimeoutFlag; // CH1 有数据 = !超时
+
+            // 急停没有被按下执行if里面的代码
+            if (!eStopActive && busRecovered)
+            {
+                // 退出异常状态前先关闭双踏板控制器
+                safety_close_pedal_controller();
+                // 断开CH2继电器将控制权还给外部主机
+                relay_set_all(false);
+                // 把表示继电器是否吸合的标志位改为 0 == 此时继电器没有吸合
+                relayEnergized = false;
+                // 把表示系统状态的枚举类型改为监听模式
+                sysState = STATE_NORMAL;
+                break;
+            }
+
+            // 只有在CH1没恢复的时候才执行双踏板回退的指令
             // 控制双踏板回退
             // 回退成功以后 g_motor_at_origin 会变成 true
             // 回退失败不会释放继电器，会隔 500ms 重试
             safety_retract_pedal_once_or_retry();
-
-            // 判断外部主机是否有数据重新发送过来
-            bool busRecovered = !busTimeoutFlag; // CH1 有数据 = !超时
-
-            // 急停没有被按下执行if里面的代码
-            if (!eStopActive)
-            {
-                // g_motor_at_origin == 电机已经回到原点 用标志位1表示 and busRecovered == 外部主机传来数据 用标志位1表示
-                if (g_motor_at_origin && busRecovered)
-                {
-                    // 退出异常状态前先关闭双踏板控制器
-                    safety_close_pedal_controller();
-                    // 断开继电器将控制权还给外部主机
-                    relay_set_all(false);
-                    // 把表示继电器是否吸合的标志位改为 0 == 此时继电器没有吸合
-                    relayEnergized = false;
-                    // 把表示系统状态的枚举类型改为监听模式
-                    sysState = STATE_NORMAL;
-                }
-            }
             break;
         }
     }
