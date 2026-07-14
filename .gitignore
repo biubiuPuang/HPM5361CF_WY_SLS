@@ -10,3 +10,5 @@ build/segger_embedded_studio/car_test.json
 .vscode/settings.json
 .cache/clangd/index/24c16.c.412F9E069726760F.idx
 *.idx
+移植之前的文件/
+
