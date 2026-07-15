@@ -12,6 +12,16 @@
         "--config", "skinparam dpi 300"
       ],
       "group": "build"
+    },
+    {
+      "label": "CMake: build firmware",
+      "type": "shell",
+      "command": "${config:cmake.cmakePath}",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build"
+      ],
+      "problemMatcher": []
     }
   ]
 } 

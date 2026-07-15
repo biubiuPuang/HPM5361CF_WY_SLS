@@ -31,9 +31,10 @@ void init_led(void)
 void set_led_state(uint8_t state)
 {
     gpio_write_pin(BOARD_LED_GPIO_CTRL, BOARD_LED_GPIO_PORT, BOARD_LED_GPIO_PIN1, state);
-    // gpio_write_pin(BOARD_LED_GPIO_CTRL, BOARD_LED_GPIO_PORT, BOARD_LED_GPIO_PIN2, state);
+    gpio_write_pin(BOARD_LED_GPIO_CTRL, BOARD_LED_GPIO_PORT, BOARD_LED_GPIO_PIN2, state);
     led_state = !state;
 }
+
 
 /**
  * @brief 切换LED引脚电平
