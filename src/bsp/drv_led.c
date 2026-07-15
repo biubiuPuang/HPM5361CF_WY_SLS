@@ -44,7 +44,7 @@ void set_led_state(uint8_t state)
 void led_toggle(void)
 {
     gpio_toggle_pin(BOARD_LED_GPIO_CTRL, BOARD_LED_GPIO_PORT, BOARD_LED_GPIO_PIN1);
-    // gpio_toggle_pin(BOARD_LED_GPIO_CTRL, BOARD_LED_GPIO_PORT, BOARD_LED_GPIO_PIN2);
+    gpio_toggle_pin(BOARD_LED_GPIO_CTRL, BOARD_LED_GPIO_PORT, BOARD_LED_GPIO_PIN2);
     led_state = !led_state;
 }
 

@@ -311,17 +311,37 @@ int main(void)
     /* 主循环 */
     while (1)
     {
-        eStopActive = get_button_state(); // 获取STOP按钮状态
+          // 1. 急停按键消抖 + LED非阻塞显示
+        static uint32_t estop_release_tick = 0;
+        static uint32_t led_blink_tick = 0;
 
-        // 急停被按下的同时,外部指示灯同步显示
-        if (eStopActive == 1)
+        /* 急停按键消抖：
+         * 按下立即生效，松开稳定50ms后才解除
+         */
+        if (get_button_state() == 1)
         {
-            set_led_state(BOARD_LED_ON);
-            board_delay_ms(500);
-            set_led_state(BOARD_LED_OFF);
-            board_delay_ms(500);
+            eStopActive = true;
+            estop_release_tick = system_tick_counter;
         }
-        else if (eStopActive == 0)
+        else if ((system_tick_counter - estop_release_tick) >= 50)
+        {
+            eStopActive = false;
+        }
+
+        /* 急停指示灯：
+         * 急停时500ms闪烁一次
+         * 正常时常亮
+         * 全程不使用 board_delay_ms，不阻塞CPU
+         */
+        if (eStopActive)
+        {
+            if ((system_tick_counter - led_blink_tick) >= 500)
+            {
+                led_blink_tick = system_tick_counter;
+                led_toggle();
+            }
+        }
+        else
         {
             set_led_state(BOARD_LED_ON);
         }
