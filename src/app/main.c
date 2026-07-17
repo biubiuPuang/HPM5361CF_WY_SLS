@@ -26,6 +26,9 @@
 #include "drv_rs485.h"
 #include "drv_timer_extra.h"
 
+// 看门狗头文件
+#include "drv_watchdog.h" // ❌
+
 /* 双踏板控制相关的头文件 */
 #include "pedal_controller.h"
 
@@ -36,6 +39,12 @@ volatile bool busTimeoutFlag = false;  // 总线超时标志
 volatile bool eStopActive = false;     // 紧急标志  == 1急停被按下  == 0 没有进入急停模式
 static bool relayEnergized = false;
 #define MOTOR_TIMEOUT_THRESHOLD 5000
+
+// 看门狗宏定义 ❌
+// 8秒超时
+#define WATCHDOG_TIMEOUT_MS (8000U)
+// 主循环正常时，每100ms最多喂一次狗
+#define WATCHDOG_FEED_INTERVAL_MS (100U)
 
 // 双踏板相关配置\标志位
 /*
@@ -235,6 +244,64 @@ static SysState_t sysState = STATE_NORMAL;
 /* 定时器间隔配置 */
 #define SYSTEM_TIMER_INTERVAL 1 // 1ms定时器中断周期
 
+// 看门狗函数 ❌
+/**
+ * @brief 判断系统是否健康
+ *
+ * 这里只判断软件有没有正常跑：
+ * 1. 主循环能跑到这里
+ * 2. system_tick_counter 还在增加
+ *
+ * 注意：
+ * busTimeoutFlag == true 不是系统不健康，那是你的业务异常状态。
+ * eStopActive == true 也不是系统不健康，那是急停输入。
+ */
+static bool app_system_is_healthy(void)
+{
+    static uint32_t last_tick = 0;
+    uint32_t now_tick = system_tick_counter;
+
+    /*
+     * 如果1ms系统计数没有变化，说明定时器可能异常，不喂狗
+     */
+    if (now_tick == last_tick)
+    {
+        return false;
+    }
+
+    last_tick = now_tick;
+    return true;
+}
+
+// 看门狗函数 ❌
+/**
+ * @brief 看门狗任务
+ *
+ * 每100ms检查一次，健康才喂狗。
+ */
+static void app_watchdog_task(void)
+{
+    static uint32_t last_feed_tick = 0;
+    uint32_t now_tick = system_tick_counter;
+
+    /*
+     * 没到喂狗间隔，不处理
+     */
+    if ((now_tick - last_feed_tick) < WATCHDOG_FEED_INTERVAL_MS)
+    {
+        return;
+    }
+
+    /*
+     * 健康检查通过后才喂狗
+     */
+    if (app_system_is_healthy())
+    {
+        watchdog_feed();
+        last_feed_tick = now_tick;
+    }
+}
+
 /* 定时器回调函数 */
 static void timer_callback(void)
 {
@@ -284,6 +351,13 @@ static hpm_stat_t system_init(void)
         return status;
     }
 
+    // 初始化看门狗 ❌
+    status = init_watchdog(WATCHDOG_TIMEOUT_MS);
+    if (status != status_success)
+    {
+        return status;
+    }
+
     // 代码运行到这则说明所有初始化功能全部运行成功
     return status;
 }
@@ -311,7 +385,7 @@ int main(void)
     /* 主循环 */
     while (1)
     {
-          // 1. 急停按键消抖 + LED非阻塞显示
+        // 1. 急停按键消抖 + LED非阻塞显示
         static uint32_t estop_release_tick = 0;
         static uint32_t led_blink_tick = 0;
 
@@ -411,6 +485,8 @@ int main(void)
             safety_retract_pedal_once_or_retry();
             break;
         }
+        // 喂狗操作 ❌
+        app_watchdog_task();
     }
 
     return 0;
