@@ -50,13 +50,8 @@ sdk_inc(src)
 sdk_inc(src/app)
 sdk_inc(src/bsp)
 
-# 用户自定义添加_双踏板检测脚本
-sdk_inc(Python-C_Second-Time)
-sdk_inc(Python-C_Second-Time/build)
-sdk_inc(Python-C_Second-Time/examples)
-sdk_inc(Python-C_Second-Time/include)
-sdk_inc(Python-C_Second-Time/src)
-sdk_inc(Python-C_Second-Time/app)
+# 用户自定义添加_双踏板 DemoC01 测试脚本
+sdk_inc(python-C_three-times)
 
 # 收集源文件
 file(GLOB_RECURSE SRC_FILES 
@@ -64,14 +59,9 @@ file(GLOB_RECURSE SRC_FILES
     src/bsp/*.c
 )
 
-# 双踏板控制源码
+# 双踏板 DemoC01 控制源码
 list(APPEND SRC_FILES
-    Python-C_Second-Time/src/pedal_controller.c
-    Python-C_Second-Time/src/servo_axis.c
-    Python-C_Second-Time/src/ids830abs_utils.c
-    Python-C_Second-Time/src/pedal_platform_hpm.c
-    Python-C_Second-Time/src/rs485_transport_hpm.c
-    Python-C_Second-Time/app/TB_Two_Driver.c
+    python-C_three-times/Demo-C_01.c
 )
 
 
